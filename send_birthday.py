@@ -2,12 +2,14 @@ import csv
 import os
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 DEFAULT_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-CSV_FILE = "birthdays.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FILE = os.path.join(BASE_DIR, "birthdays.csv")
 
 
 def send_telegram(chat_id, message):
@@ -19,7 +21,9 @@ def send_telegram(chat_id, message):
         "text": message
     }
 
-    response = requests.post(url, data=data)
+    response = requests.post(url, data=data, timeout=30)
+
+    print("Telegram response:", response.text)
 
     if response.ok:
         print("Telegram message sent successfully")
@@ -27,7 +31,8 @@ def send_telegram(chat_id, message):
         print("Telegram error:", response.text)
 
 
-today = datetime.now()
+# India time
+today = datetime.now(ZoneInfo("Asia/Kolkata"))
 
 print("Today:", today.strftime("%d.%m.%Y"))
 
@@ -48,8 +53,9 @@ with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
             print(f"Invalid DOB for {name}: {dob}")
             continue
 
-
         if birthday.day == today.day and birthday.month == today.month:
+
+            print(f"Birthday found: {name}")
 
             message = (
                 f"🎂 Happy Birthday, {name}! 🎉\n\n"
@@ -59,3 +65,6 @@ with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
             )
 
             send_telegram(DEFAULT_CHAT_ID, message)
+
+        else:
+            print(f"No birthday today for {name}")
